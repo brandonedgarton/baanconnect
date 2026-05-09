@@ -1,33 +1,51 @@
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack } from "expo-router";
 
 import GlobalProvider, { useGlobalContext } from "@/lib/global-provider";
+import { initI18nFromStorage } from "@/lib/i18n";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "./globals.css";
 
-function AppNavigator() {
+/**
+ * Auth gates using Expo Router protected routes.
+ * @see https://docs.expo.dev/router/advanced/protected/
+ */
+function RootNavigator() {
   const { user, loading } = useGlobalContext();
-  const router = useRouter();
-  const segments = useSegments();
+  const isAuthed = Boolean(user);
 
-  useEffect(() => {
-    if (loading) return;
+  // Prevent transient protected-route mounts while auth/profile state refreshes.
+  if (loading) return null;
 
-    // Treat both an (auth) group OR a root /sign-in route as the auth area
-    const inAuth = segments[0] === "(auth)" || segments[0] === "sign-in";
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={!isAuthed}>
+        <Stack.Screen name="sign-in" />
+        <Stack.Screen name="sign-up" />
+        <Stack.Screen name="reset-password" />
+      </Stack.Protected>
 
-    if (!user && !inAuth) {
-      router.replace("/sign-in");
-    } else if (user && inAuth) {
-      router.replace("/(root)/(tabs)");
-    }
-  }, [user, loading, segments]);
-
-  return <Stack screenOptions={{ headerShown: false }} />;
+      <Stack.Protected guard={isAuthed}>
+        <Stack.Screen name="(root)" />
+        <Stack.Screen name="become-agent" />
+        <Stack.Screen name="admin/verify-agents" />
+        <Stack.Screen name="admin/active-agents" />
+        <Stack.Screen name="admin/suspended-agents" />
+        <Stack.Screen name="admin/moderate-listings" />
+        <Stack.Screen name="admin/reports" />
+      </Stack.Protected>
+    </Stack>
+  );
 }
 
 export default function RootLayout() {
+  const [i18nReady, setI18nReady] = useState(false);
+
+  useEffect(() => {
+    void initI18nFromStorage().finally(() => setI18nReady(true));
+  }, []);
+
   const [fontsLoaded] = useFonts({
     "Rubik-Bold": require("../assets/fonts/Rubik-Bold.ttf"),
     "Rubik-ExtraBold": require("../assets/fonts/Rubik-ExtraBold.ttf"),
@@ -41,11 +59,11 @@ export default function RootLayout() {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || !i18nReady) return null;
 
   return (
     <GlobalProvider>
-      <AppNavigator />
+      <RootNavigator />
     </GlobalProvider>
   );
 }

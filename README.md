@@ -1,50 +1,89 @@
-# Welcome to your Expo app 👋
+# Baan Connect Real Estate App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Mobile real estate marketplace built with Expo + React Native + Appwrite.
 
-## Get started
+This project supports three roles:
+- Buyer
+- Agent
+- Administrator
 
-1. Install dependencies
+It includes public property discovery, saved listings, map browsing, role-aware profile experiences, and admin moderation tools for agents and listings.
 
-   ```bash
-   npm install
-   ```
+## Tech Stack
 
-2. Start the app
+- Expo SDK 54 / React Native 0.81
+- Expo Router (file-based routing)
+- Appwrite (Auth + Database + Storage + prefs)
+- NativeWind (Tailwind classes for RN)
+- i18next (EN/TH/ZH localization)
+- Expo Location + React Native Maps
 
-   ```bash
-   npx expo start
-   ```
+## Core Features
 
-In the output, you'll find options to open the app in a
+### Buyer-facing
+- Browse published properties on Home and Explore
+- Filter by type, price, beds/baths, amenities, area, rating, location, nearby radius
+- View property details, galleries, reviews, and map context
+- Save/unsave favorites
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Agent-facing
+- Apply to become an agent (`/become-agent`)
+- Manage own listings (`/my-listings`)
+- Create and edit listing forms
+- Listing actions limited by verification/suspension status
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Admin-facing
+- Verify pending agents
+- View active agents and suspend/edit profiles
+- View suspended agents and restore access
+- Moderate listings (draft/published/archived)
+- Publish/restore/archive listing visibility workflows
 
-## Get a fresh project
+## Project Structure
 
-When you're ready, run:
+- `app/` - Routes and screens (Expo Router)
+- `components/` - Reusable UI components
+- `lib/` - Appwrite integrations, hooks, helpers, domain logic
+- `constants/` - Icons, images, static categories/settings metadata
+- `docs/` - Submission artifacts (API docs, tests, review notes, screencast script)
+
+## Setup
+
+1. Install dependencies:
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Configure environment variables for Appwrite (see `lib/appwrite.ts` `config` keys):
+- `EXPO_PUBLIC_APPWRITE_ENDPOINT`
+- `EXPO_PUBLIC_APPWRITE_PROJECT_ID`
+- `EXPO_PUBLIC_APPWRITE_DATABASE_ID`
+- `EXPO_PUBLIC_APPWRITE_PROPERTIES_TABLE_ID`
+- `EXPO_PUBLIC_APPWRITE_AGENTS_TABLE_ID`
+- `EXPO_PUBLIC_APPWRITE_USER_PROFILES_TABLE_ID`
+- `EXPO_PUBLIC_APPWRITE_GALLERIES_TABLE_ID`
+- `EXPO_PUBLIC_APPWRITE_REVIEWS_TABLE_ID`
+- `EXPO_PUBLIC_APPWRITE_BUCKET_ID`
 
-## Learn more
+3. Start app:
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npx expo start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Scripts
 
-## Join the community
+- `npm run start` - Start Expo dev server
+- `npm run android` - Run Android build
+- `npm run ios` - Run iOS build
+- `npm run web` - Run web build
+- `npm run lint` - Run Expo lint checks
 
-Join our community of developers creating universal apps.
+## Submission Docs
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+For course submission materials, see:
+- `docs/API_DOCUMENTATION.md`
+- `docs/TEST_PLAN_AND_RESULTS.md`
+- `docs/CODE_REVIEW_FINAL_NOTES.md`
+- `docs/SCREENCAST_SCRIPT.md`

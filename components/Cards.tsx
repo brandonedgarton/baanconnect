@@ -1,100 +1,264 @@
 import icons from "@/constants/icons";
 import images from "@/constants/images";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { formatPriceByLanguage } from "@/lib/currency";
+import { useTranslation } from "react-i18next";
+import {
+    ActivityIndicator,
+    Image,
+    Pressable,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import { Models } from "react-native-appwrite";
 
-// 1) Describe your document's custom fields
 type PropertyDoc = Models.Document & {
-    image?: string;           // optional to be safe
-    rating?: number | string; // depending on how you store it
+    image?: string;
+    rating?: number | string;
     name: string;
     address: string;
     price: number | string;
+    bedrooms?: number;
+    bathrooms?: number;
 };
 
 interface Props {
     item: PropertyDoc;
     onPress?: () => void;
+    isFavorite?: boolean;
+    onToggleFavorite?: () => void;
+    favoriteDisabled?: boolean;
 }
 
-// 3) Small helpers/fallbacks so UI never crashes
-const imgSrc = (uri?: string) =>
-    uri && uri.length > 0 ? { uri } : images.no-result;
+const imageSource = (raw?: string | null) => {
+    if (typeof raw !== "string") return images.noResult;
+    const trimmed = raw.trim();
+    if (!trimmed) return images.noResult;
+    return { uri: trimmed };
+};
 
-export const FeaturedCard = ({ item, onPress }: Props) => {
+const useFormatPrice = () => {
+    const { i18n } = useTranslation();
+    return (value: number | string) => {
+        return formatPriceByLanguage(value, i18n.language);
+    };
+};
+
+export const FeaturedCard = ({
+    item,
+    onPress,
+    isFavorite = false,
+    onToggleFavorite,
+    favoriteDisabled = false,
+}: Props) => {
+    const { t } = useTranslation();
+    const formatPrice = useFormatPrice();
+    const heroSource = imageSource(item.image);
+
     return (
         <TouchableOpacity
             onPress={onPress}
-            className="flex flex-col items-start w-60 h-80 relative"
+            className="flex flex-col items-start w-60 h-80 relative rounded-2xl overflow-hidden bg-white"
         >
-            <Image source={imgSrc(item.image)} className="size-full rounded-2xl" />
+            <Image
+                source={heroSource}
+                className="absolute inset-0 w-full h-full"
+                resizeMode="cover"
+            />
 
             <Image
                 source={images.cardGradient}
                 className="size-full rounded-2xl absolute bottom-0"
             />
 
-            <View className="flex flex-row items-center bg-white/90 px-3 py-1.5 rounded-full absolute top-5 right-5">
+            <View className="flex flex-row items-center bg-white/95 px-3 py-1.5 rounded-full absolute top-4 right-4">
                 <Image source={icons.star} className="size-3.5" />
                 <Text className="text-xs font-rubik-bold text-primary-300 ml-1">
-                    {item.rating}
+                    {item.rating ?? "—"}
                 </Text>
             </View>
 
-            <View className="flex flex-col items-start absolute bottom-5 inset-x-5">
+            <View className="flex flex-col items-start absolute bottom-4 inset-x-4">
                 <Text
                     className="text-xl font-rubik-extrabold text-white"
                     numberOfLines={1}
                 >
                     {item.name}
                 </Text>
-                <Text className="text-base font-rubik text-white" numberOfLines={1}>
+                <Text
+                    className="text-sm font-rubik text-white mt-1 leading-5"
+                    numberOfLines={2}
+                >
                     {item.address}
                 </Text>
 
-                <View className="flex flex-row items-center justify-between w-full">
+                {(item.bedrooms != null || item.bathrooms != null) && (
+                    <View className="flex-row items-center gap-3 mt-2">
+                        {item.bedrooms != null && (
+                            <View className="flex-row items-center bg-black/25 px-2 py-0.5 rounded-full">
+                                <Image
+                                    source={icons.bed}
+                                    className="size-3.5"
+                                    tintColor="#fff"
+                                />
+                                <Text className="text-[11px] font-rubik text-white ml-1">
+                                    {item.bedrooms === 0
+                                        ? t("card.studio")
+                                        : `${item.bedrooms} ${t("card.bed")}`}
+                                </Text>
+                            </View>
+                        )}
+                        {item.bathrooms != null && (
+                            <View className="flex-row items-center bg-black/25 px-2 py-0.5 rounded-full">
+                                <Image
+                                    source={icons.bath}
+                                    className="size-3.5"
+                                    tintColor="#fff"
+                                />
+                                <Text className="text-[11px] font-rubik text-white ml-1">
+                                    {item.bathrooms} {t("card.bath")}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                )}
+
+                <View className="flex flex-row items-center justify-between w-full mt-3">
                     <Text className="text-xl font-rubik-extrabold text-white">
-                        ${item.price}
+                        {formatPrice(item.price)} {t("price.perMonth")}
                     </Text>
-                    <Image source={icons.heart} className="size-5" />
+                    <Pressable
+                        onPress={onToggleFavorite}
+                        disabled={!onToggleFavorite || favoriteDisabled}
+                    >
+                        {({ pressed }) => (
+                            <View
+                                style={{
+                                    transform: [{ scale: pressed ? 0.9 : 1 }],
+                                    opacity: pressed ? 0.8 : 1,
+                                }}
+                            >
+                                {favoriteDisabled ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Image
+                                        source={icons.heart}
+                                        className="size-5"
+                                        tintColor={isFavorite ? "#FF4D67" : "#FFFFFF"}
+                                    />
+                                )}
+                            </View>
+                        )}
+                    </Pressable>
                 </View>
             </View>
         </TouchableOpacity>
     );
 };
 
-export const Card = ({ item, onPress }: Props) => {
+export const Card = ({
+    item,
+    onPress,
+    isFavorite = false,
+    onToggleFavorite,
+    favoriteDisabled = false,
+}: Props) => {
+    const { t } = useTranslation();
+    const formatPrice = useFormatPrice();
+    const heroSource = imageSource(item.image);
+
     return (
         <TouchableOpacity
-            className="flex-1 w-full mt-4 px-3 py-4 rounded-lg bg-white shadow-lg shadow-black-100/70 relative"
+            className="flex-1 w-full mt-4 rounded-2xl bg-white border border-gray-300 overflow-hidden shadow-sm"
             onPress={onPress}
+            activeOpacity={0.92}
+            style={{
+                shadowColor: "#000000",
+                shadowOpacity: 0.08,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 2,
+            }}
         >
-            <View className="flex flex-row items-center absolute px-2 top-5 right-5 bg-white/90 p-1 rounded-full z-50">
-                <Image source={icons.star} className="size-2.5" />
-                <Text className="text-xs font-rubik-bold text-primary-300 ml-0.5">
-                    {item.rating}
-                </Text>
+            <View className="relative w-full h-40 bg-primary-100">
+                <Image
+                    source={heroSource}
+                    className="w-full h-full"
+                    resizeMode="cover"
+                />
+                <View className="flex flex-row items-center absolute px-2 top-3 right-3 bg-white/95 py-1 rounded-full border border-primary-100">
+                    <Image source={icons.star} className="size-2.5" />
+                    <Text className="text-xs font-rubik-bold text-primary-300 ml-0.5">
+                        {item.rating ?? "—"}
+                    </Text>
+                </View>
             </View>
 
-            <Image source={{ uri: item.image }} className="w-full h-40 rounded-lg" />
-
-            <View className="flex flex-col mt-2">
-                <Text className="text-base font-rubik-bold text-black-300">
+            <View className="flex flex-col px-3 pt-2.5 pb-3 border-t border-gray-200 bg-[#FAFAFA]">
+                <Text
+                    className="text-base font-rubik-bold text-black-300"
+                    numberOfLines={2}
+                >
                     {item.name}
                 </Text>
-                <Text className="text-xs font-rubik text-black-100">
+                <Text
+                    className="text-sm font-rubik text-black-200 mt-1 leading-5"
+                    numberOfLines={3}
+                >
                     {item.address}
                 </Text>
 
-                <View className="flex flex-row items-center justify-between mt-2">
+                {(item.bedrooms != null || item.bathrooms != null) && (
+                    <View className="flex-row items-center gap-3 mt-2">
+                        {item.bedrooms != null && (
+                            <View className="flex-row items-center">
+                                <Image source={icons.bed} className="size-3.5" />
+                                <Text className="text-xs text-black-200 ml-1 font-rubik">
+                                    {item.bedrooms === 0
+                                        ? t("card.studio")
+                                        : `${item.bedrooms} ${t("card.bed")}`}
+                                </Text>
+                            </View>
+                        )}
+                        {item.bathrooms != null && (
+                            <View className="flex-row items-center">
+                                <Image source={icons.bath} className="size-3.5" />
+                                <Text className="text-xs text-black-200 ml-1 font-rubik">
+                                    {item.bathrooms} {t("card.bath")}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                )}
+
+                <View className="flex flex-row items-center justify-between mt-2.5">
                     <Text className="text-base font-rubik-bold text-primary-300">
-                        ${item.price}
+                        {formatPrice(item.price)} {t("price.perMonth")}
                     </Text>
-                    <Image
-                        source={icons.heart}
-                        className="w-5 h-5 mr-2"
-                        tintColor="#191D31"
-                    />
+                    <Pressable
+                        onPress={onToggleFavorite}
+                        disabled={!onToggleFavorite || favoriteDisabled}
+                    >
+                        {({ pressed }) => (
+                            <View
+                                className="mr-0.5"
+                                style={{
+                                    transform: [{ scale: pressed ? 0.9 : 1 }],
+                                    opacity: pressed ? 0.8 : 1,
+                                }}
+                            >
+                                {favoriteDisabled ? (
+                                    <ActivityIndicator size="small" color="#191D31" />
+                                ) : (
+                                    <Image
+                                        source={icons.heart}
+                                        className="w-5 h-5"
+                                        tintColor={isFavorite ? "#FF4D67" : "#191D31"}
+                                    />
+                                )}
+                            </View>
+                        )}
+                    </Pressable>
                 </View>
             </View>
         </TouchableOpacity>

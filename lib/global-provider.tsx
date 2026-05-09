@@ -1,21 +1,27 @@
-import React, { createContext, ReactNode, useContext } from "react";
+import React, {
+    createContext,
+    ReactNode,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+} from "react";
 
-import { getCurrentUser } from "./appwrite";
-import { useAppwrite } from "./useAppwrite";
-/*import { Redirect } from "expo-router";*/
+import {
+    enrichSessionUser,
+    getCurrentUserWithProfile,
+    getPrefsRole,
+    type GlobalSessionUser,
+    type UserProfileDocument,
+} from "./appwrite";
 
 interface GlobalContextType {
-    isLogged: boolean;
-    user: User | null;
+    user: GlobalSessionUser | null;
+    profile: UserProfileDocument | null;
+    /** Buyer/agent chosen in prefs (select-role). Not the same as table RBAC. */
+    hasChosenRole: boolean;
     loading: boolean;
-    refetch: (newParams?: Record<string, string | number>) => Promise<void>;
-}
-
-interface User {
-    $id: string;
-    name: string;
-    email: string;
-    avatar: string;
+    refetchUser: () => Promise<void>;
 }
 
 const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
@@ -25,23 +31,50 @@ interface GlobalProviderProps {
 }
 
 export const GlobalProvider = ({ children }: GlobalProviderProps) => {
-    const {
-        data: user,
-        loading,
-        refetch,
-    } = useAppwrite({
-        fn: getCurrentUser,
-    });
+    const [user, setUser] = useState<GlobalSessionUser | null>(null);
+    const [profile, setProfile] = useState<UserProfileDocument | null>(null);
+    const [hasChosenRole, setHasChosenRole] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    const isLogged = !!user;
+    const loadUser = useCallback(async () => {
+        setLoading(true);
+        try {
+            const result = await getCurrentUserWithProfile();
+
+            if (!result) {
+                setUser(null);
+                setProfile(null);
+                setHasChosenRole(false);
+                return;
+            }
+
+            const sessionUser = await enrichSessionUser(result.account);
+            const prefsRole = await getPrefsRole();
+            setHasChosenRole(prefsRole != null);
+            setUser(sessionUser);
+            setProfile(result.profile);
+        } catch (error) {
+            console.error("GlobalProvider loadUser error:", error);
+            setUser(null);
+            setProfile(null);
+            setHasChosenRole(false);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        void loadUser();
+    }, [loadUser]);
 
     return (
         <GlobalContext.Provider
             value={{
-                isLogged,
                 user,
+                profile,
+                hasChosenRole,
                 loading,
-                refetch,
+                refetchUser: loadUser,
             }}
         >
             {children}
@@ -56,6 +89,5 @@ export const useGlobalContext = (): GlobalContextType => {
 
     return context;
 };
-
 
 export default GlobalProvider;

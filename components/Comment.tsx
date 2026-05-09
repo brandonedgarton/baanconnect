@@ -19,11 +19,11 @@ const Comment = ({ item }: Props) => {
     const avatarSource =
         item.avatar && item.avatar.length > 0
             ? { uri: item.avatar }
-            : images.avatar; // fallback image from your constants
+            : images.avatar;
   return (
     <View className="flex flex-col items-start">
       <View className="flex flex-row items-center">
-        <Image source={{ uri: item.avatar }} className="size-14 rounded-full" />
+        <Image source={avatarSource} className="size-14 rounded-full" />
         <Text className="text-base text-black-300 text-start font-rubik-bold ml-3">
           {item.name}
         </Text>
